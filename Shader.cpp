@@ -1,6 +1,7 @@
-#include "Shader.hpp"
+#include <glad/gl.h>
 #include "GLShader.hpp"
 #include <glm/glm.hpp>
+#include "Shader.hpp"
 
 Shader::Shader(const char* vertexPath, const char* fragmentPath) {
     ID = LoadShader(vertexPath, fragmentPath);

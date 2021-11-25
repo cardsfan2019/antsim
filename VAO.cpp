@@ -1,5 +1,5 @@
 #include "VAO.hpp"  
-#include "glad/glad.h"
+#include <glad/gl.h>
 #include <iostream>
 	
 VAO::VAO() {

@@ -1,6 +1,6 @@
+#include <glad/gl.h>
 #include "VBO.hpp"
-#include "glad/glad.h"
-	
+
 VBO::VBO () {
     glGenBuffers(1, &ID);
 }

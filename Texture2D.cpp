@@ -1,6 +1,6 @@
 #include "Texture2D.hpp"
 #include "stb_image.h"
-#include "glad/glad.h"
+#include <glad/gl.h>
 #include <iostream>
 
 Texture2D::Texture2D(const char *imagePath)

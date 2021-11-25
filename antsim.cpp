@@ -1,4 +1,6 @@
-#include "glad/glad.h"
+#include <glad/gl.h>
+
+#define GLFW_DLL
 #include <GLFW/glfw3.h>
 
 #include <glm/glm.hpp>
@@ -8,7 +10,6 @@
 #include "Shader.hpp"
 #include "GLShader.hpp"
 #include "Camera.hpp"
-#include "Model.hpp"
 #include "Texture2D.hpp"
 #include "VAO.hpp"
 #include "VBO.hpp"
@@ -60,13 +61,12 @@ int main()
     glfwSetKeyCallback(window, key_callback);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-    {
-        std::cout << "Failed to initialize GLAD" << std::endl;
-        return -1;
-    }
+    // if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+    // {
+    //     std::cout << "Failed to initialize GLAD" << std::endl;
+    //     return -1;
+    // }
 
-    stbi_set_flip_vertically_on_load(true);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_PROGRAM_POINT_SIZE);
 
