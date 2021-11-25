@@ -9,5 +9,5 @@ void main()
 {    
     ivec2 textureSize2d = textureSize(texture1, 0);
     vec4 color = texture(texture1, TexCoords);
-    FragColor = vec4(color.r / float(textureSize2d.x), color.g / float(textureSize2d.y), color.b, 1.0);
+    FragColor = color;
 }
