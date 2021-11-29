@@ -49,6 +49,7 @@ struct Agent {
 	float posX;
     float posY;
 	float angle;
+    int species;
 };
 
 unsigned int hash(unsigned int state) {
@@ -137,6 +138,9 @@ int main()
         a.posY = y;
 
         a.angle = 3.14 + atan2f(tex_h/2-y, tex_w/2-x);
+
+        int species = rand() % 2;
+        a.species = species;
 
         agents[i] = a;
     }

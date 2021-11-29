@@ -6,6 +6,7 @@ struct Agent {
 	float posX;
     float posY;
 	float angle;
+	int species;
 };
 
 layout(std430, binding = 1) buffer agentBuffer
@@ -34,7 +35,7 @@ float sense(Agent agent, float angle) {
 			uint sampleY = sensorCenter.y + j;
 
 			if (sampleX >= 0 && sampleX <= 2560 && sampleY >= 0 && sampleY <= 1440) {
-				sum += imageLoad(img_output, ivec2(sampleX, sampleY));
+				sum += dot(imageLoad(img_output, ivec2(sampleX, sampleY)), vec4(float(agent.species) * 2 - 1));
 			}
 		}
 	}
@@ -52,7 +53,7 @@ void main() {
 
 	vec2 direction = vec2(cos(agent.angle), sin(agent.angle));
 	vec2 newPos = vec2(agent.posX, agent.posY);
-	newPos = newPos + direction * 1;
+	newPos = newPos + direction * 2;
 
 	float width = 2560;
 	float height = 1440;
@@ -61,7 +62,7 @@ void main() {
 	float weightLeft = sense(agent, 0.45);
 	float weightRight = sense(agent, -0.45);
 
-	float strength = 0.8;
+	float strength = 0.7;
 	float newAngle = agent.angle;
 
 	if (weightRight > weightLeft) {
@@ -70,8 +71,12 @@ void main() {
 	else if (weightLeft > weightRight) {
 		newAngle += strength * weightLeft / weightRight;
 	}
-
+	
 	vec4 pixel = vec4(0.0, 0.0, 1.0, 1.0);
+
+	if (agent.species == 0) {
+		pixel = vec4(0.0, 1.0, 0.0, 1.0);
+	}
 
 	if(newPos.x < 0) {
 		newPos.x = width-1;

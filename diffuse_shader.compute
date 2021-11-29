@@ -23,7 +23,7 @@ void main() {
 
 	vec4 diffusedValue = mix(originalValue, blurResult, 1);
 
-	vec4 diffusedAndEvaporated = vec4(max(diffusedValue.r - 0.02, 0.1), diffusedValue.g, diffusedValue.b - 0.02, 1.0);
+	vec4 diffusedAndEvaporated = diffusedValue - 0.02;
 
 	imageStore(img, pixel_coords, diffusedAndEvaporated);
 }
