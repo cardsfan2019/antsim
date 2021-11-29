@@ -48,16 +48,6 @@ struct Agent {
 	float angle;
 };
 
-unsigned int hash(unsigned int state) {
-	state ^= 2747636419u;
-	state *= 2654435769u;
-	state ^= state >> 16;
-	state *= 2654435769u;
-	state ^= state >> 16;
-	state *= 2654435769u;
-	return state;
-}
-
 int main()
 {
     srand(time(NULL));
