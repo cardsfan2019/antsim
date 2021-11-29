@@ -39,7 +39,7 @@ float sense(Agent agent, float angle) {
 		}
 	}
 	
-	return sum.r;
+	return sum.b;
 }
 
 void main() {
@@ -65,13 +65,13 @@ void main() {
 	float newAngle = agent.angle;
 
 	if (weightRight > weightLeft) {
-		newAngle -= strength;// * weightRight / weightLeft;
+		newAngle -= strength * weightRight / weightLeft;
 	} 
 	else if (weightLeft > weightRight) {
-		newAngle += strength;// * weightLeft / weightRight;
+		newAngle += strength * weightLeft / weightRight;
 	}
 
-	vec4 pixel = vec4(1.0, 1.0, 1.0, 1.0);
+	vec4 pixel = vec4(0.0, 0.0, 1.0, 1.0);
 
 	if(newPos.x < 0) {
 		newPos.x = width-1;
