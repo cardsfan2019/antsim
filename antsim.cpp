@@ -73,7 +73,7 @@ int main()
 
     // glfw window creation
     // --------------------
-    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Ant Simulation", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Ant Simulation", glfwGetPrimaryMonitor(), NULL);
     if (window == NULL)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
@@ -117,9 +117,9 @@ int main()
 
     const int tex_w = SCR_WIDTH, tex_h = SCR_HEIGHT;
 
-    Agent agents[100000];
+    Agent* agents = new Agent[1000000];
 
-    for (int i = 0; i < 100000; i++) {
+    for (int i = 0; i < 1000000; i++) {
         Agent a;
 
         float x = 0.0f;
@@ -129,7 +129,7 @@ int main()
             x = tex_w * rand() / (float)RAND_MAX;
             y = tex_h * rand() / (float)RAND_MAX;
 
-            if ((x-tex_w/2)*(x-tex_w/2) + (y-tex_h/2)*(y-tex_h/2) < 800*800)
+            if ((x-tex_w/2)*(x-tex_w/2) + (y-tex_h/2)*(y-tex_h/2) < 600*600)
                 break;
         }
 
@@ -144,7 +144,7 @@ int main()
     GLuint ssbo;
     glGenBuffers(1, &ssbo);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(agents), agents, GL_DYNAMIC_DRAW);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Agent) * 1000000, agents, GL_DYNAMIC_DRAW);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssbo);
 
     GLuint tex_output;
@@ -197,7 +197,7 @@ int main()
 
         //dispatch compute shader for updating the positions of the ants
         moveShader.use();
-        glDispatchCompute((GLuint)5000, 1, 1);
+        glDispatchCompute((GLuint)1000000, 1, 1);
 
         //dispatch the compute shader for diffusing the color of the window (subtracting some from brightness);
         diffuseShader.use();
@@ -217,8 +217,9 @@ int main()
         
         glfwSwapBuffers(window);
     }
+    delete [] agents;
 }
-
+    
     glfwTerminate();
     return 0;
 }

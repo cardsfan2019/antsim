@@ -25,7 +25,7 @@ unsigned int hash(unsigned int state) {
 
 float sense(Agent agent, float angle) {
 	float sensorAngle = agent.angle + angle;
-	ivec2 sensorCenter = ivec2(int(agent.posX + 4*cos(angle)), int(agent.posY + 4*sin(angle)));
+	ivec2 sensorCenter = ivec2(int(agent.posX + 4*cos(sensorAngle)), int(agent.posY + 4*sin(sensorAngle)));
 	vec4 sum = vec4(0.0, 0.0, 0.0, 1.0);
 
 	for (int i = -1; i <= 1; i++) {
@@ -45,38 +45,30 @@ float sense(Agent agent, float angle) {
 void main() {
 	uint idx = gl_GlobalInvocationID.x + gl_GlobalInvocationID.y * gl_NumWorkGroups.x;
 
-	if(idx >= 100000) { return; }
+	if(idx >= 1000000) { return; }
 	Agent agent = agents[idx];
 
 	float rNum = float(hash(idx)) / 4394967295.0;
 
 	vec2 direction = vec2(cos(agent.angle), sin(agent.angle));
 	vec2 newPos = vec2(agent.posX, agent.posY);
-	newPos = newPos + direction * rNum * 1.1;
+	newPos = newPos + direction * 2;
 
 	float width = 2560;
 	float height = 1440;
 
 	float weightForward = sense(agent, 0);
-	float weightLeft = sense(agent, 0.25);
-	float weightRight = sense(agent, -0.25);
+	float weightLeft = sense(agent, 0.45);
+	float weightRight = sense(agent, -0.45);
 
-	float strength = 0.12;
-	float randomSteerStrength = rNum * strength;
-
+	float strength = 1.2;
 	float newAngle = agent.angle;
 
-	if (weightForward > weightLeft && weightForward > weightRight) {
-		newAngle += 0;
-	}
-	else if (weightForward < weightLeft && weightForward < weightRight) {
-		//newAngle += randomSteerStrength - strenght/2;
-	}
-	else if (weightRight > weightLeft) {
-		newAngle -= randomSteerStrength;
+	if (weightRight > weightLeft) {
+		newAngle -= strength;// * weightRight / weightLeft;
 	} 
 	else if (weightLeft > weightRight) {
-		newAngle += randomSteerStrength;
+		newAngle += strength;// * weightLeft / weightRight;
 	}
 
 	vec4 pixel = vec4(1.0, 1.0, 1.0, 1.0);
