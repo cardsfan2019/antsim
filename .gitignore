@@ -3,4 +3,5 @@
 .vscode/settings.json
 .vscode/tasks.json
 antsim.exe
+antsimoptimized.exe
 *.o

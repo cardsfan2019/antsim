@@ -8,7 +8,6 @@
 
 #include "Shader.hpp"
 #include "GLShader.hpp"
-#include "Camera.hpp"
 #include "Texture2D.hpp"
 #include "VAO.hpp"
 #include "VBO.hpp"
@@ -31,8 +30,6 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 const unsigned int SCR_WIDTH = 2560;
 const unsigned int SCR_HEIGHT = 1440;
 
-// camera
-Camera camera(glm::vec3(0.0f, 0.0f, 0.0f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 
