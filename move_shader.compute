@@ -1,0 +1,110 @@
+#version 430
+layout(local_size_x = 1, local_size_y = 1) in;
+layout(rgba32f, binding = 0) uniform image2D img_output;
+
+struct Agent {
+	float posX;
+    float posY;
+	float angle;
+};
+
+layout(std430, binding = 1) buffer agentBuffer
+{
+    Agent agents[];
+};
+
+unsigned int hash(unsigned int state) {
+	state ^= 2747636419u;
+	state *= 2654435769u;
+	state ^= state >> 16;
+	state *= 2654435769u;
+	state ^= state >> 16;
+	state *= 2654435769u;
+	return state;
+}
+
+float sense(Agent agent, float angle) {
+	float sensorAngle = agent.angle + angle;
+	ivec2 sensorCenter = ivec2(int(agent.posX + 4*cos(angle)), int(agent.posY + 4*sin(angle)));
+	vec4 sum = vec4(0.0, 0.0, 0.0, 1.0);
+
+	for (int i = -1; i <= 1; i++) {
+		for (int j = -1; j <= 1; j++) {
+			uint sampleX = sensorCenter.x + i;
+			uint sampleY = sensorCenter.y + j;
+
+			if (sampleX >= 0 && sampleX <= 2560 && sampleY >= 0 && sampleY <= 1440) {
+				sum += imageLoad(img_output, ivec2(sampleX, sampleY));
+			}
+		}
+	}
+	
+	return sum.r;
+}
+
+void main() {
+	uint idx = gl_GlobalInvocationID.x + gl_GlobalInvocationID.y * gl_NumWorkGroups.x;
+
+	if(idx >= 100000) { return; }
+	Agent agent = agents[idx];
+
+	float rNum = float(hash(idx)) / 4394967295.0;
+
+	vec2 direction = vec2(cos(agent.angle), sin(agent.angle));
+	vec2 newPos = vec2(agent.posX, agent.posY);
+	newPos = newPos + direction * rNum * 1.1;
+
+	float width = 2560;
+	float height = 1440;
+
+	float weightForward = sense(agent, 0);
+	float weightLeft = sense(agent, 0.25);
+	float weightRight = sense(agent, -0.25);
+
+	float strength = 0.12;
+	float randomSteerStrength = rNum * strength;
+
+	float newAngle = agent.angle;
+
+	if (weightForward > weightLeft && weightForward > weightRight) {
+		newAngle += 0;
+	}
+	else if (weightForward < weightLeft && weightForward < weightRight) {
+		//newAngle += randomSteerStrength - strenght/2;
+	}
+	else if (weightRight > weightLeft) {
+		newAngle -= randomSteerStrength;
+	} 
+	else if (weightLeft > weightRight) {
+		newAngle += randomSteerStrength;
+	}
+
+	vec4 pixel = vec4(1.0, 1.0, 1.0, 1.0);
+
+	if(newPos.x < 0) {
+		newPos.x = width-1;
+		// newAngle = 3.14 - newAngle;
+	}
+
+	if (newPos.x >= width) {
+		newPos.x = 1;
+		// newAngle = 3.14 - newAngle;
+	}
+
+	if (newPos.y < 0) {	
+		newPos.y = height-1;
+		// newAngle = 6.283 - newAngle;
+	}
+	
+	if (newPos.y >= height) {
+		newPos.y = 1;
+		// newAngle = 6.283 - newAngle;
+	}
+
+	agents[idx].posX = newPos.x;
+	agents[idx].posY = newPos.y;
+	agents[idx].angle = newAngle;
+
+	ivec2 pixel_coords = ivec2(newPos.x, newPos.y);
+	imageStore(img_output, pixel_coords, pixel);
+}

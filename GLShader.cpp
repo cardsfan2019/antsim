@@ -87,3 +87,41 @@ GLuint LoadShader(const char* vertexPath, const char* fragmentPath) {
     return program;
 
 }
+
+GLuint LoadCompute(const char* computePath) {
+    GLuint computeShader = glCreateShader(GL_COMPUTE_SHADER);
+
+    // Read shaders
+
+    std::string compShaderStr = readFile(computePath);
+    const char *computeShaderSrc = compShaderStr.c_str();
+
+    GLint result = GL_FALSE;
+    int logLength;
+    std::cout << "Compiling compute shader." << std::endl;
+    glShaderSource(computeShader, 1, &computeShaderSrc, NULL);
+    glCompileShader(computeShader);
+
+    // Check fragment shader
+
+    glGetShaderiv(computeShader, GL_COMPILE_STATUS, &result);
+    glGetShaderiv(computeShader, GL_INFO_LOG_LENGTH, &logLength);
+    std::vector<char> computeShaderError((logLength > 1) ? logLength : 1);
+    glGetShaderInfoLog(computeShader, logLength, NULL, &computeShaderError[0]);
+    std::cout << &computeShaderError[0] << std::endl;
+
+    std::cout << "Linking program" << std::endl;
+    GLuint computeShaderProgram = glCreateProgram();
+    glAttachShader(computeShaderProgram, computeShader);
+    glLinkProgram(computeShaderProgram);
+
+    glGetProgramiv(computeShaderProgram, GL_LINK_STATUS, &result);
+    glGetProgramiv(computeShaderProgram, GL_INFO_LOG_LENGTH, &logLength);
+    std::vector<char> programError( (logLength > 1) ? logLength : 1 );
+    glGetProgramInfoLog(computeShaderProgram, logLength, NULL, &programError[0]);
+    std::cout << &programError[0] << std::endl;
+
+    glDeleteShader(computeShader);
+
+    return computeShaderProgram;
+}

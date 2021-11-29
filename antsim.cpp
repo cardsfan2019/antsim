@@ -13,9 +13,13 @@
 #include "VAO.hpp"
 #include "VBO.hpp"
 #include "EBO.hpp"
+#include "Compute.hpp"
+#include "time.h"
 
 #include <iostream>
 #include <string>
+
+#define TWO_PI 6.283
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
@@ -24,8 +28,8 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 
 // settings
-const unsigned int SCR_WIDTH = 1920;
-const unsigned int SCR_HEIGHT = 1080;
+const unsigned int SCR_WIDTH = 2560;
+const unsigned int SCR_HEIGHT = 1440;
 
 // camera
 Camera camera(glm::vec3(0.0f, 0.0f, 0.0f));
@@ -39,14 +43,27 @@ bool firstMouse = true;
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
-float windowDim[] = {
-    -1.0f, -1.0f, 2.0f, 2.0f
+float zoomSpeed = 0.1f;
+
+struct Agent {
+	float posX;
+    float posY;
+	float angle;
 };
 
-float zoomSpeed = 0.1f;
+unsigned int hash(unsigned int state) {
+	state ^= 2747636419u;
+	state *= 2654435769u;
+	state ^= state >> 16;
+	state *= 2654435769u;
+	state ^= state >> 16;
+	state *= 2654435769u;
+	return state;
+}
 
 int main()
 {
+    srand(time(NULL));
     // glfw: initialize and configure
     // ------------------------------
     glfwInit();
@@ -95,68 +112,51 @@ int main()
     Shader shader("shader.vs", "shader.fs");
     shader.use();
 
-    // Compile fragment shader
-    GLuint computeShader = glCreateShader(GL_COMPUTE_SHADER);
+    Compute moveShader("move_shader.compute");
+    Compute diffuseShader("diffuse_shader.compute");
 
-    // Read shaders
+    const int tex_w = SCR_WIDTH, tex_h = SCR_HEIGHT;
 
-    std::string compShaderStr = readFile("shader.compute");
-    const char *computeShaderSrc = compShaderStr.c_str();
+    Agent agents[100000];
 
-    GLint result = GL_FALSE;
-    int logLength;
-    std::cout << "Compiling fragment shader." << std::endl;
-    glShaderSource(computeShader, 1, &computeShaderSrc, NULL);
-    glCompileShader(computeShader);
+    for (int i = 0; i < 100000; i++) {
+        Agent a;
 
-    // Check fragment shader
+        float x = 0.0f;
+        float y = 0.0f;
 
-    glGetShaderiv(computeShader, GL_COMPILE_STATUS, &result);
-    glGetShaderiv(computeShader, GL_INFO_LOG_LENGTH, &logLength);
-    std::vector<char> computeShaderError((logLength > 1) ? logLength : 1);
-    glGetShaderInfoLog(computeShader, logLength, NULL, &computeShaderError[0]);
-    std::cout << &computeShaderError[0] << std::endl;
+        while(true) {
+            x = tex_w * rand() / (float)RAND_MAX;
+            y = tex_h * rand() / (float)RAND_MAX;
 
-    std::cout << "Linking program" << std::endl;
-    GLuint computeShaderProgram = glCreateProgram();
-    glAttachShader(computeShaderProgram, computeShader);
-    glLinkProgram(computeShaderProgram);
+            if ((x-tex_w/2)*(x-tex_w/2) + (y-tex_h/2)*(y-tex_h/2) < 800*800)
+                break;
+        }
 
-    glGetProgramiv(computeShaderProgram, GL_LINK_STATUS, &result);
-    glGetProgramiv(computeShaderProgram, GL_INFO_LOG_LENGTH, &logLength);
-    std::vector<char> programError( (logLength > 1) ? logLength : 1 );
-    glGetProgramInfoLog(computeShaderProgram, logLength, NULL, &programError[0]);
-    std::cout << &programError[0] << std::endl;
+        a.posX = x;
+        a.posY = y;
 
-    glDeleteShader(computeShader);
-    const GLchar* shader_source = "shader.compute";
+        a.angle = atan2f(tex_h/2-y, tex_w/2-x);
 
-    //Texture2D texture("container.jpg");
+        agents[i] = a;
+    }
 
     GLuint ssbo;
     glGenBuffers(1, &ssbo);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(windowDim), windowDim, GL_DYNAMIC_DRAW);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(agents), agents, GL_DYNAMIC_DRAW);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssbo);
 
-    const int tex_w = 512, tex_h = 512;
     GLuint tex_output;
     glGenTextures(1, &tex_output);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, tex_output);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, tex_w, tex_h, 0, GL_RGBA, GL_FLOAT, NULL);
     glBindImageTexture(0, tex_output, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
-
-    // glUseProgram(computeShaderProgram);
-    // glBindTexture(GL_TEXTURE_2D, tex_output);
-    // float data[tex_h * tex_w * 4];
-    // glDispatchCompute((GLuint)tex_w, (GLuint)tex_h, 1);
-
-    // glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, data);
 
     float vertices[] = {
          1.0f,  1.0f, 0.0f, 1.0f, 1.0f,  // top right
@@ -164,9 +164,9 @@ int main()
         -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,  // bottom left
         -1.0f,  1.0f, 0.0f, 0.0f, 1.0f   // top left 
     };
-    unsigned int indices[] = {  // note that we start from 0!
-        0, 1, 3,  // first Triangle
-        1, 2, 3   // second Triangle
+    unsigned int indices[] = {
+        0, 1, 3,
+        1, 2, 3
     };
 
     VAO quad_vao;
@@ -182,51 +182,38 @@ int main()
     quad_vao.set(0, 3, GL_FLOAT, 5 * sizeof(float), (void*)0);
     quad_vao.set(1, 2, GL_FLOAT, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 
-    //texture.bind();
     shader.use();
     shader.setInt("texture1", 0);
 
-    //glActiveTexture(GL_TEXTURE0);
-    //glBindImageTexture(0, texture.ID, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
-    //texture.bind();
-
-    while (!glfwWindowShouldClose(window))
-    {
+    while (!glfwWindowShouldClose(window)) {
         processInput(window);
         float currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;        
         
         glfwPollEvents();
-        glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
+        //glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // shader.use();
-        // glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 1000.0f);
-        // glm::mat4 view = camera.GetViewMatrix();
-        // shader.setMat4("projection", projection);
-        // shader.setMat4("view", view);
+        //dispatch compute shader for updating the positions of the ants
+        moveShader.use();
+        glDispatchCompute((GLuint)5000, 1, 1);
 
-        glUseProgram(computeShaderProgram);
-        //std::cout << glGetError() << std::endl;
+        //dispatch the compute shader for diffusing the color of the window (subtracting some from brightness);
+        diffuseShader.use();
+        glDispatchCompute((GLuint)tex_w, tex_h, 1);
 
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(windowDim), windowDim, GL_DYNAMIC_DRAW);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssbo);
-        glDispatchCompute((GLuint)tex_w, (GLuint)tex_h, 1);
-        //std::cout << glGetError() << std::endl;
-        // make sure writing to image has finished before read
+        //wait for compute shaders to finish
         glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-        //std::cout << glGetError() << std::endl;
+
+        //draw quad with texture from compute
         shader.use();
-        { // normal drawing pass
-            glClear(GL_COLOR_BUFFER_BIT);
-            quad_vao.bind();
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, tex_output);
-            glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-        }
+        glClear(GL_COLOR_BUFFER_BIT);
+        quad_vao.bind();
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, tex_output);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
         
         glfwSwapBuffers(window);
     }
@@ -243,19 +230,11 @@ void processInput(GLFWwindow *window)
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        windowDim[1] += 0.02f * zoomSpeed;
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        windowDim[1] -= 0.02f * zoomSpeed;
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        windowDim[0] -= 0.02f * zoomSpeed;    
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        windowDim[0] += 0.02f * zoomSpeed;
+    // if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+    // if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+    // if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+    // if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 
-    // if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-    //     camera.ProcessKeyboard(UP, deltaTime);
-    // if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-    //     camera.ProcessKeyboard(DOWN, deltaTime);
 }
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -277,20 +256,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
-    float lx = windowDim[2];
-    float ly = windowDim[3];
 
-    windowDim[2] -= yoffset * zoomSpeed;
-    windowDim[3] -= yoffset * zoomSpeed;
-
-    windowDim[0] += (lx - windowDim[2]) / 2.0f;
-    windowDim[1] += (ly - windowDim[3]) / 2.0f;
-
-    if(yoffset > 0) {
-        zoomSpeed *= 0.95f;
-    } else {
-        zoomSpeed /= 0.95f;
-    }
 }
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)

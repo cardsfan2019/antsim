@@ -1,0 +1,29 @@
+#version 430
+layout(local_size_x = 1, local_size_y = 1) in;
+layout(rgba32f, binding = 0) uniform image2D img;
+
+void main() {
+	ivec2 pixel_coords = ivec2(gl_GlobalInvocationID.xy);
+	vec4 originalValue = imageLoad(img, pixel_coords);
+
+	vec4 sum = vec4(0.0, 0.0, 0.0, 1.0);
+
+	for (int i = -1; i <= 1; i++) {
+		for (int j = -1; j <= 1; j++) {
+			uint sampleX = gl_GlobalInvocationID.x + i;
+			uint sampleY = gl_GlobalInvocationID.y + j;
+
+			if (sampleX >= 0 && sampleX <= gl_NumWorkGroups.x && sampleY >= 0 && sampleY <= gl_NumWorkGroups.y) {
+				sum += imageLoad(img, ivec2(sampleX, sampleY));
+			}
+		}
+	}
+
+	vec4 blurResult = sum / 9.0;
+
+	vec4 diffusedValue = mix(originalValue, blurResult, 0.05);
+
+	vec4 diffusedAndEvaporated = diffusedValue - 0.0009;
+
+	imageStore(img, pixel_coords, diffusedAndEvaporated);
+}
