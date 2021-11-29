@@ -21,9 +21,9 @@ void main() {
 
 	vec4 blurResult = sum / 9.0;
 
-	vec4 diffusedValue = mix(originalValue, blurResult, 0.4);
+	vec4 diffusedValue = mix(originalValue, blurResult, 1);
 
-	vec4 diffusedAndEvaporated = diffusedValue - 0.05;
+	vec4 diffusedAndEvaporated = diffusedValue - 0.02;
 
 	imageStore(img, pixel_coords, diffusedAndEvaporated);
 }

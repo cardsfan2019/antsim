@@ -136,7 +136,7 @@ int main()
         a.posX = x;
         a.posY = y;
 
-        a.angle = atan2f(tex_h/2-y, tex_w/2-x);
+        a.angle = 3.14 + atan2f(tex_h/2-y, tex_w/2-x);
 
         agents[i] = a;
     }

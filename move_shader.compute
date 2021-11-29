@@ -52,7 +52,7 @@ void main() {
 
 	vec2 direction = vec2(cos(agent.angle), sin(agent.angle));
 	vec2 newPos = vec2(agent.posX, agent.posY);
-	newPos = newPos + direction * 2;
+	newPos = newPos + direction * 1;
 
 	float width = 2560;
 	float height = 1440;
@@ -61,7 +61,7 @@ void main() {
 	float weightLeft = sense(agent, 0.45);
 	float weightRight = sense(agent, -0.45);
 
-	float strength = 1.2;
+	float strength = 0.8;
 	float newAngle = agent.angle;
 
 	if (weightRight > weightLeft) {
