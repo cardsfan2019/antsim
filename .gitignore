@@ -5,3 +5,5 @@
 antsim.exe
 antsimoptimized.exe
 *.o
+glad.c
+gl.c
