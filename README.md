@@ -1,4 +1,4 @@
-<h1> Ant/Slime mold Simulation</h1>
+<h1> Ant/Slime Mold Simulation</h1>
 
 - Written in C++ and OpenGL 4.3, using GLFW3 and GLAD
 - Utilizes multiple compute shaders to simulate a slime mold, generating complex structures from relatively simple rules
